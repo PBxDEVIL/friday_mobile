@@ -4,23 +4,31 @@ from elevenlabs import play, stream
 from elevenlabs.client import ElevenLabs
 import config
 import io
+import subprocess, json
 
 client_eleven = ElevenLabs(api_key=config.ELEVENLABS_API_KEY)
 engine_offline = pyttsx3.init()
 
 def listen_for_wake_word(wake_word="friday"):
-    r = sr.Recognizer()
-    with sr.Microphone() as source:
-        r.adjust_for_ambient_noise(source, duration=1)
-        print(f"Waiting for '{wake_word}'...")
-        while True:
-            try:
-                audio = r.listen(source, timeout=5, phrase_time_limit=3)
-                text = r.recognize_google(audio).lower()
-                if wake_word in text:
-                    print("Wake word detected.")
-                    audio_cmd = r.listen(source, timeout=5, phrase_time_limit=8)
-                    command = r.recognize_google(audio_cmd)
+    print(f"Waiting for '{wake_word}'...")
+    while True:
+        # Call Android's built-in speech recognition
+        result = subprocess.run(
+            ["termux-speech-to-text"],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            text = data.get("text", "").lower()
+            if wake_word in text:
+                print("Wake word detected, now speak command...")
+                cmd_result = subprocess.run(
+                    ["termux-speech-to-text"],
+                    capture_output=True, text=True, timeout=10
+                )
+                if cmd_result.returncode == 0:
+                    cmd_data = json.loads(cmd_result.stdout)
+                    command = cmd_data.get("text", "")
                     print(f"Command: {command}")
                     return command
             except sr.WaitTimeoutError:
