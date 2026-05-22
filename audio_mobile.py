@@ -1,4 +1,3 @@
-cat > ~friday_mobile/audio_mobile.py << 'EOF'
 import subprocess
 import json
 import config
@@ -47,4 +46,3 @@ def speak(text):
     except Exception as e:
         print("ElevenLabs failed, using Android TTS:", e)
         subprocess.run(["termux-tts-speak", text])
-EOF
