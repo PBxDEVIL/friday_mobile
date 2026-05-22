@@ -1,4 +1,4 @@
-cat > ~/friday_mobile/audio_mobile.py << 'EOF'
+cat > ~friday_mobile/audio_mobile.py << 'EOF'
 import subprocess
 import json
 import config
