@@ -1,28 +1,34 @@
-import speech_recognition as sr
-import pyttsx3  # offline fallback
-from elevenlabs import play, stream
-from elevenlabs.client import ElevenLabs
-import config
-import io
-import subprocess, json
 import subprocess
+import json
+import config
+from elevenlabs import play
+from elevenlabs.client import ElevenLabs
 
 client_eleven = ElevenLabs(api_key=config.ELEVENLABS_API_KEY)
-engine_offline = pyttsx3.init()
 
 def listen_for_wake_word(wake_word="friday"):
-    print(f"Waiting for '{wake_word}'...")
+    """
+    Use Android's built‑in speech recognizer via Termux:API.
+    Listens for the wake word, then records the actual command.
+    """
+    print(f"Waiting for wake word '{wake_word}'...")
     while True:
-        # Call Android's built-in speech recognition
-        result = subprocess.run(
-            ["termux-speech-to-text"],
-            capture_output=True, text=True, timeout=10
-        )
-        if result.returncode == 0:
+        # First, listen for wake word
+        try:
+            result = subprocess.run(
+                ["termux-speech-to-text"],
+                capture_output=True, text=True, timeout=10
+            )
+            if result.returncode != 0:
+                continue
             data = json.loads(result.stdout)
             text = data.get("text", "").lower()
-            if wake_word in text:
-                print("Wake word detected, now speak command...")
+        except (subprocess.TimeoutExpired, json.JSONDecodeError):
+            continue
+
+        if wake_word in text:
+            print("Wake word detected. Speak your command...")
+            try:
                 cmd_result = subprocess.run(
                     ["termux-speech-to-text"],
                     capture_output=True, text=True, timeout=10
@@ -32,20 +38,16 @@ def listen_for_wake_word(wake_word="friday"):
                     command = cmd_data.get("text", "")
                     print(f"Command: {command}")
                     return command
-            except sr.WaitTimeoutError:
-                continue
-            except sr.UnknownValueError:
+            except Exception as e:
+                print("Error capturing command:", e)
                 continue
 
 def speak(text):
+    """Use ElevenLabs for natural voice, fallback to Android TTS."""
     try:
-        # Use ElevenLabs first (needs internet)
-        from elevenlabs import play
-        from elevenlabs.client import ElevenLabs
-        client_eleven = ElevenLabs(api_key=config.ELEVENLABS_API_KEY)
         audio = client_eleven.generate(text=text, voice=config.VOICE_ID)
         play(audio)
     except Exception as e:
         print("ElevenLabs failed, using Android TTS:", e)
-        # Fallback: Android system TTS via Termux:API
+        # Termux:API's native speech
         subprocess.run(["termux-tts-speak", text])
