@@ -1,3 +1,4 @@
+cat > ~/friday_mobile/audio_mobile.py << 'EOF'
 import subprocess
 import json
 import config
@@ -7,13 +8,9 @@ from elevenlabs.client import ElevenLabs
 client_eleven = ElevenLabs(api_key=config.ELEVENLABS_API_KEY)
 
 def listen_for_wake_word(wake_word="friday"):
-    """
-    Use Android's built‑in speech recognizer via Termux:API.
-    Listens for the wake word, then records the actual command.
-    """
+    """Use Android built-in speech recognizer via Termux:API."""
     print(f"Waiting for wake word '{wake_word}'...")
     while True:
-        # First, listen for wake word
         try:
             result = subprocess.run(
                 ["termux-speech-to-text"],
@@ -43,11 +40,11 @@ def listen_for_wake_word(wake_word="friday"):
                 continue
 
 def speak(text):
-    """Use ElevenLabs for natural voice, fallback to Android TTS."""
+    """Use ElevenLabs, fallback to Android TTS."""
     try:
         audio = client_eleven.generate(text=text, voice=config.VOICE_ID)
         play(audio)
     except Exception as e:
         print("ElevenLabs failed, using Android TTS:", e)
-        # Termux:API's native speech
         subprocess.run(["termux-tts-speak", text])
+EOF
