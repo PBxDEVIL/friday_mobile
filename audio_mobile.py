@@ -7,7 +7,6 @@ import io
 import subprocess, json
 import subprocess
 
-
 client_eleven = ElevenLabs(api_key=config.ELEVENLABS_API_KEY)
 engine_offline = pyttsx3.init()
 
